@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  companies UserCompany[]
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String
+  cnpj      String
+  createdAt DateTime @default(now())
+
+  users UserCompany[]
+  di    ImportDeclaration[]
+}
+
+model UserCompany {
+  id         String  @id @default(uuid())
+  userId     String
+  companyId  String
+  role       String
+
+  user     User    @relation(fields: [userId], references: [id])
+  company  Company @relation(fields: [companyId], references: [id])
+}
+
+model ImportDeclaration {
+  id           String   @id @default(uuid())
+  companyId    String
+  diNumber     String?
+  importerName String?
+  supplierName String?
+  totalValue   Float?
+  status       String
+
+  rawJson      Json
+
+  createdAt    DateTime @default(now())
+  processedAt  DateTime?
+
+  company Company @relation(fields: [companyId], references: [id])
+  items   DiItem[]
+  taxes   DiTax[]
+  invoices Invoice[]
+}
+
+model DiItem {
+  id          String  @id @default(uuid())
+  diId        String
+  productName String
+  ncm         String
+  quantity    Float
+  unitValue   Float
+  totalValue  Float
+
+  di ImportDeclaration @relation(fields: [diId], references: [id])
+}
+
+model DiTax {
+  id     String @id @default(uuid())
+  diId   String
+
+  ii     Float?
+  ipi    Float?
+  pis    Float?
+  cofins Float?
+  icms   Float?
+
+  di ImportDeclaration @relation(fields: [diId], references: [id])
+}
+
+model Invoice {
+  id            String   @id @default(uuid())
+  diId          String
+  invoiceNumber String?
+  xml           String
+  status        String
+  createdAt     DateTime @default(now())
+
+  di ImportDeclaration @relation(fields: [diId], references: [id])
+}
